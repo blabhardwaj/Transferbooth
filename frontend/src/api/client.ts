@@ -30,14 +30,25 @@ export async function getTransfers(): Promise<TransferInfo[]> {
     return data.transfers;
 }
 
+export async function selectFiles(): Promise<string[]> {
+    const data = await request<{ files: string[] }>('/select-files', { method: 'POST' });
+    return data.files;
+}
+
 export async function createTransfer(
     peerId: string,
     filePaths: string[],
 ): Promise<TransferInfo[]> {
-    const data = await request<{ transfers: TransferInfo[] }>('/transfers', {
+    const res = await fetch(`${BASE}/transfers`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ peer_id: peerId, file_paths: filePaths }),
     });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail ?? 'Transfer creation failed');
+    }
+    const data = (await res.json()) as { transfers: TransferInfo[] };
     return data.transfers;
 }
 

@@ -1,0 +1,213 @@
+INFO:     Started server process [29080]
+INFO:     Waiting for application startup.
+2026-02-16 06:45:02,221 [INFO] __main__: Starting Transfer Booth services...
+2026-02-16 06:45:02,221 [INFO] discovery.service: Starting discovery on UDP port 41234
+2026-02-16 06:45:02,222 [INFO] discovery.service: Discovery service started
+2026-02-16 06:45:02,222 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:02,223 [INFO] transfer.manager: Transfer receiver listening on port 54534
+2026-02-16 06:45:02,223 [INFO] __main__: Transfer Booth ready ù API: 0.0.0.0:8765, Receiver port: 54534
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8765 (Press CTRL+C to quit)
+INFO:     ('127.0.0.1', 58034) - "WebSocket /ws" [accepted]
+2026-02-16 06:45:03,496 [INFO] api.websocket: WebSocket client connected. Total: 1
+INFO:     connection open
+INFO:     ('127.0.0.1', 58881) - "WebSocket /ws" [accepted]
+2026-02-16 06:45:03,527 [INFO] api.websocket: WebSocket client connected. Total: 2
+INFO:     connection open
+2026-02-16 06:45:05,234 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:08,257 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:10,780 [INFO] discovery.service: Discovered peer: Nishant_PC (#2) (127.0.0.1)
+2026-02-16 06:45:11,267 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:14,287 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:17,277 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:20,294 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:23,308 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:26,333 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:29,325 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:32,345 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:35,361 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:38,373 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:41,374 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:44,374 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:47,382 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:50,396 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:53,392 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:56,409 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:45:59,429 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:02,442 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:05,441 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:08,460 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:11,470 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:14,486 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:17,499 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:20,514 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:23,532 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:26,548 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:29,560 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:32,562 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:35,575 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:38,578 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:41,603 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:44,626 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:47,633 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:50,630 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:53,642 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:56,640 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:46:59,664 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:02,667 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:05,690 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:08,690 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:11,683 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:14,668 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:17,681 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:20,691 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:23,697 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:26,711 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:29,715 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:32,736 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:35,749 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:38,751 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:41,765 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:44,784 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:47,805 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:50,809 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:53,796 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:56,817 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:47:59,823 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:02,844 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:05,855 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:08,865 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:11,881 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:14,894 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:16,834 [INFO] api.websocket: WebSocket client disconnected. Total: 1
+INFO:     connection closed
+2026-02-16 06:48:16,835 [INFO] api.websocket: WebSocket client disconnected. Total: 0
+INFO:     connection closed
+INFO:     ('127.0.0.1', 61594) - "WebSocket /ws" [accepted]
+2026-02-16 06:48:17,032 [INFO] api.websocket: WebSocket client connected. Total: 1
+INFO:     127.0.0.1:61595 - "GET /api/devices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61596 - "GET /api/transfers HTTP/1.1" 200 OK
+INFO:     connection open
+2026-02-16 06:48:17,035 [INFO] api.websocket: WebSocket client disconnected. Total: 0
+INFO:     connection closed
+INFO:     127.0.0.1:61599 - "GET /api/devices HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61600 - "GET /api/transfers HTTP/1.1" 200 OK
+INFO:     ('127.0.0.1', 55041) - "WebSocket /ws" [accepted]
+2026-02-16 06:48:17,049 [INFO] api.websocket: WebSocket client connected. Total: 1
+INFO:     connection open
+2026-02-16 06:48:17,914 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+INFO:     127.0.0.1:55043 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55045 - "GET /api/settings HTTP/1.1" 200 OK
+2026-02-16 06:48:20,919 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:23,938 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:26,925 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:29,932 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:32,940 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:35,958 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:38,956 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:41,969 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:44,984 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:47,983 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:50,995 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:54,023 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:48:57,026 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:01,807 [INFO] api.routes: Staged file for transfer: C:\Users\blabh\Downloads\TransferBooth\instance_1\.staging\The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:01,939 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+INFO:     127.0.0.1:58242 - "POST /api/transfers HTTP/1.1" 200 OK
+2026-02-16 06:49:04,918 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:06,153 [INFO] transfer.service: Received PAUSE from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:07,942 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:10,960 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:13,976 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:13,978 [INFO] transfer.service: Received RESUME from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:15,184 [INFO] transfer.service: Received PAUSE from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:16,971 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:19,985 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:20,296 [INFO] transfer.service: Received RESUME from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:21,421 [INFO] transfer.service: Received PAUSE from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:22,994 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:26,024 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:29,021 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+INFO:     127.0.0.1:55075 - "POST /api/transfers/3001a7f5-5e6a-4838-9c66-c980c365ecce/resume HTTP/1.1" 200 OK
+2026-02-16 06:49:30,621 [INFO] transfer.service: Received RESUME from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+INFO:     127.0.0.1:62839 - "POST /api/transfers/3001a7f5-5e6a-4838-9c66-c980c365ecce/pause HTTP/1.1" 200 OK
+2026-02-16 06:49:31,873 [INFO] transfer.service: Received PAUSE from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:32,012 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:34,593 [INFO] transfer.service: Received RESUME from receiver for The Velocipastor (2018) 720p BluRay x264.mkv
+2026-02-16 06:49:35,029 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:38,056 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:41,058 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:44,071 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:47,074 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:50,085 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:53,084 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:56,092 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:49:59,105 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:02,106 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:05,135 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:08,134 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:11,135 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:14,137 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:17,154 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:20,178 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:23,197 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:26,223 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:29,232 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:32,250 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:35,246 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:38,272 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:41,265 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:44,254 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:47,252 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:50,252 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:53,264 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:56,266 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:50:59,248 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:02,250 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:05,266 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:08,253 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:11,262 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:14,280 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:17,293 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:20,301 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:23,311 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:26,317 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:29,318 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:32,336 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:35,341 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:38,361 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:41,384 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:44,409 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:47,416 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:50,447 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:53,431 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:56,440 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:51:59,459 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:02,465 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:05,481 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:08,504 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:11,496 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:14,511 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:17,524 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:20,527 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:23,541 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:26,546 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:29,562 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:32,542 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:35,562 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:38,572 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:41,581 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:44,578 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:47,587 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:50,575 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:53,578 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:56,594 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:52:59,614 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:02,608 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:05,595 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:08,612 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:11,629 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:14,634 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:17,640 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:20,632 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:53:23,643 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied

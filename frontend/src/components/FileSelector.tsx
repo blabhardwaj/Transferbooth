@@ -1,11 +1,8 @@
-/* ============================
-   FileSelector — multi-file picker + drag-and-drop
-   ============================ */
-
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, X, File, Send } from 'lucide-react';
+import { X, File as FileIcon, Send, FolderOpen } from 'lucide-react';
 import type { Peer } from '../types';
+import { selectFiles } from '../api/client';
 
 interface Props {
     peer: Peer;
@@ -13,84 +10,36 @@ interface Props {
     onClose: () => void;
 }
 
-function formatSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    const size = bytes / Math.pow(1024, i);
-    return `${size.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
-}
-
-interface SelectedFile {
-    name: string;
-    size: number;
-    path: string;
-}
-
 export default function FileSelector({ peer, onSend, onClose }: Props) {
-    const [files, setFiles] = useState<SelectedFile[]>([]);
-    const [dragging, setDragging] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const [filePaths, setFilePaths] = useState<string[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleFileSelect = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            const fileList = e.target.files;
-            if (!fileList) return;
-
-            const newFiles: SelectedFile[] = [];
-            for (let i = 0; i < fileList.length; i++) {
-                const f = fileList[i]!;
-                newFiles.push({
-                    name: f.name,
-                    size: f.size,
-                    // In a desktop app we'd get the full path.
-                    // For the web UI, we store the name and the backend handles path resolution.
-                    path: (f as unknown as { path?: string }).path ?? f.name,
-                });
-            }
-            setFiles((prev) => [...prev, ...newFiles]);
-        },
-        [],
-    );
+    const handleBrowse = async () => {
+        setIsLoading(true);
+        try {
+            const paths = await selectFiles();
+            setFilePaths((prev) => [...prev, ...paths]);
+        } catch (err) {
+            console.error('Failed to select files:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const removeFile = (index: number) => {
-        setFiles((prev) => prev.filter((_, i) => i !== index));
+        setFilePaths((prev) => prev.filter((_, i) => i !== index));
     };
 
     const handleSend = () => {
-        if (files.length === 0) return;
-        onSend(
-            peer,
-            files.map((f) => f.path),
-        );
+        if (filePaths.length === 0) return;
+        onSend(peer, filePaths);
+        setFilePaths([]); // Clear functionality
         onClose();
     };
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragging(true);
-    };
-
-    const handleDragLeave = () => {
-        setDragging(false);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        setDragging(false);
-        const droppedFiles = e.dataTransfer.files;
-        if (!droppedFiles) return;
-
-        const newFiles: SelectedFile[] = [];
-        for (let i = 0; i < droppedFiles.length; i++) {
-            const f = droppedFiles[i]!;
-            newFiles.push({
-                name: f.name,
-                size: f.size,
-                path: (f as unknown as { path?: string }).path ?? f.name,
-            });
-        }
-        setFiles((prev) => [...prev, ...newFiles]);
+    const getFileName = (path: string) => {
+        // Handle both Windows and Unix paths
+        return path.split(/[/\\]/).pop() || path;
     };
 
     return (
@@ -111,53 +60,53 @@ export default function FileSelector({ peer, onSend, onClose }: Props) {
             >
                 <h3>Send files to {peer.device_name}</h3>
 
-                <div
-                    className={`drop-zone ${dragging ? 'dragging' : ''}`}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
-                    onClick={() => inputRef.current?.click()}
-                >
-                    <Upload size={32} />
-                    <p>
-                        Drop files here or{' '}
-                        <span className="browse-text">browse</span>
-                    </p>
+                <div className="file-selector-content">
+                    {filePaths.length === 0 ? (
+                        <div className="empty-state" onClick={handleBrowse}>
+                            <div className="icon-circle">
+                                <FolderOpen size={32} />
+                            </div>
+                            <p>Click to select files from your computer</p>
+                            <button className="btn btn-secondary" disabled={isLoading}>
+                                {isLoading ? 'Opening...' : 'Browse Files'}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="selected-files-list">
+                            <div className="list-header">
+                                <span>Selected Files ({filePaths.length})</span>
+                                <button className="btn btn-ghost btn-sm" onClick={handleBrowse}>
+                                    + Add More
+                                </button>
+                            </div>
+                            <div className="files-scroll-area">
+                                <AnimatePresence>
+                                    {filePaths.map((path, i) => (
+                                        <motion.div
+                                            key={`${path}-${i}`}
+                                            className="selected-file-row"
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                        >
+                                            <FileIcon size={16} className="file-icon" />
+                                            <span className="file-path" title={path}>
+                                                {getFileName(path)}
+                                                <span className="full-path">{path}</span>
+                                            </span>
+                                            <button
+                                                className="remove-btn"
+                                                onClick={() => removeFile(i)}
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </AnimatePresence>
+                            </div>
+                        </div>
+                    )}
                 </div>
-
-                <input
-                    ref={inputRef}
-                    type="file"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={handleFileSelect}
-                />
-
-                {files.length > 0 && (
-                    <div className="selected-files">
-                        <AnimatePresence>
-                            {files.map((f, i) => (
-                                <motion.div
-                                    key={`${f.name}-${i}`}
-                                    className="selected-file"
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    exit={{ opacity: 0, height: 0 }}
-                                >
-                                    <File size={14} />
-                                    <span className="file-name">{f.name}</span>
-                                    <span className="file-size">{formatSize(f.size)}</span>
-                                    <button
-                                        className="remove-btn"
-                                        onClick={() => removeFile(i)}
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </motion.div>
-                            ))}
-                        </AnimatePresence>
-                    </div>
-                )}
 
                 <div className="file-selector-actions">
                     <button className="btn btn-secondary" onClick={onClose}>
@@ -166,13 +115,14 @@ export default function FileSelector({ peer, onSend, onClose }: Props) {
                     <button
                         className="btn btn-primary"
                         onClick={handleSend}
-                        disabled={files.length === 0}
+                        disabled={filePaths.length === 0}
                     >
                         <Send size={14} />
-                        Send {files.length > 0 ? `(${files.length})` : ''}
+                        Send {filePaths.length > 0 ? `(${filePaths.length})` : ''}
                     </button>
                 </div>
             </motion.div>
         </motion.div>
     );
 }
+

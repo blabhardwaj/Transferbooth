@@ -126,6 +126,81 @@ class SpeedTracker:
         return total_bytes / elapsed
 
 
+async def _monitor_remote_commands(
+    reader: asyncio.StreamReader,
+    transfer_info: TransferInfo,
+    state_callback,
+) -> None:
+    """(Sender side) Listen for commands from receiver while sending."""
+    try:
+        while transfer_info.state not in (
+            TransferState.COMPLETED,
+            TransferState.FAILED,
+            TransferState.CANCELLED,
+        ):
+            # We use a small timeout or just wait. recv_message awaits header.
+            # Only READ messages here.
+            try:
+                msg_type, _ = await recv_message(reader)
+            except asyncio.IncompleteReadError:
+                break
+            except Exception:
+                break
+
+            if msg_type == MessageType.PAUSE:
+                logger.info(f"Received PAUSE from receiver for {transfer_info.file_name}")
+                transfer_info.state = TransferState.PAUSED
+                await state_callback(transfer_info)
+            elif msg_type == MessageType.RESUME:
+                logger.info(f"Received RESUME from receiver for {transfer_info.file_name}")
+                transfer_info.state = TransferState.TRANSFERRING
+                await state_callback(transfer_info)
+            elif msg_type == MessageType.CANCEL:
+                logger.info(f"Received CANCEL from receiver for {transfer_info.file_name}")
+                transfer_info.state = TransferState.CANCELLED
+                await state_callback(transfer_info)
+    except asyncio.CancelledError:
+        pass
+
+
+async def _monitor_local_state(
+    writer: asyncio.StreamWriter,
+    transfer_info: TransferInfo,
+) -> None:
+    """(Receiver side) Watch for local state changes and send commands."""
+    last_state = transfer_info.state
+    try:
+        while transfer_info.state not in (
+            TransferState.COMPLETED,
+            TransferState.FAILED,
+            TransferState.CANCELLED,
+            TransferState.REJECTED,
+        ):
+            # Check for state changes initiated by UI (TransferManager)
+            current = transfer_info.state
+            
+            if current != last_state:
+                if current == TransferState.PAUSED and last_state == TransferState.TRANSFERRING:
+                    logger.info(f"Sending PAUSE to sender for {transfer_info.file_name}")
+                    await send_message(writer, MessageType.PAUSE)
+                elif current == TransferState.TRANSFERRING and last_state == TransferState.PAUSED:
+                    logger.info(f"Sending RESUME to sender for {transfer_info.file_name}")
+                    await send_message(writer, MessageType.RESUME)
+                elif current == TransferState.CANCELLED:
+                    logger.info(f"Sending CANCEL to sender for {transfer_info.file_name}")
+                    await send_message(writer, MessageType.CANCEL)
+                    return # Exit loop on cancel
+
+                last_state = current
+            
+            await asyncio.sleep(0.1)
+
+    except asyncio.CancelledError:
+        pass
+    except Exception as e:
+        logger.error(f"Local state monitor error: {e}")
+
+
 async def send_file(
     peer_ip: str,
     peer_port: int,
@@ -147,6 +222,7 @@ async def send_file(
     """
     reader: asyncio.StreamReader | None = None
     writer: asyncio.StreamWriter | None = None
+    monitor_task: asyncio.Task | None = None
 
     try:
         transfer_info.state = TransferState.CONNECTING
@@ -188,6 +264,11 @@ async def send_file(
         transfer_info.transferred_bytes = offset
         await state_callback(transfer_info)
 
+        # START MONITORING FOR REMOTE COMMANDS (PAUSE/RESUME from receiver)
+        monitor_task = asyncio.create_task(
+            _monitor_remote_commands(reader, transfer_info, state_callback)
+        )
+
         tracker = SpeedTracker()
         last_progress_time = time.monotonic()
 
@@ -199,18 +280,35 @@ async def send_file(
                     await send_message(writer, MessageType.CANCEL)
                     return
                 if transfer_info.state == TransferState.PAUSED:
+                    # Notify receiver we are pausing (confirmation) - optional but good practice
+                    # Actually, if the pause came FROM receiver, echoing it back might be redundant but harmless.
+                    # If pause came from sender UI, we MUST send it.
+                    # To avoid determining origin, we can just send PAUSE message if we aren't already receiving one?
+                    # Simpler: The sending loop just stops sending chunks.
+                    # BUT if we initiated the pause, we should tell receiver.
+                    # Let's trust that if the state is PAUSED, the receiver knows or we should tell them.
+                    
+                    # Problem: If receiver sent PAUSE, sending PAUSE back is fine.
+                    # If sender UI set PAUSE, we MUST send PAUSE.
+                    # So sending it is safer.
                     await send_message(writer, MessageType.PAUSE)
+                    
                     # Wait until resumed or cancelled
                     while transfer_info.state == TransferState.PAUSED:
                         await asyncio.sleep(0.1)
+                    
                     if transfer_info.state == TransferState.CANCELLED:
                         await send_message(writer, MessageType.CANCEL)
                         return
+                    
                     await send_message(writer, MessageType.RESUME)
 
                 chunk = f.read(CHUNK_SIZE)
                 if not chunk:
                     break
+
+                # Yield control to allow monitor_task to run
+                await asyncio.sleep(0)
 
                 encrypted = encrypt_chunk(session_key, chunk)
                 await send_message(writer, MessageType.DATA_CHUNK, encrypted)
@@ -218,9 +316,9 @@ async def send_file(
                 transfer_info.transferred_bytes += len(chunk)
                 tracker.record(len(chunk))
 
-                # Update progress at most every 100ms
+                # Update progress at most every 200ms
                 now = time.monotonic()
-                if now - last_progress_time >= 0.1:
+                if now - last_progress_time >= 0.2:
                     transfer_info.speed_bps = tracker.get_speed()
                     transfer_info.progress_percent = (
                         transfer_info.transferred_bytes / transfer_info.file_size * 100
@@ -253,6 +351,9 @@ async def send_file(
         transfer_info.error_message = str(e)
         await state_callback(transfer_info)
     finally:
+        if monitor_task:
+            monitor_task.cancel()
+        
         if writer:
             writer.close()
             try:
@@ -283,6 +384,7 @@ async def receive_file(
         The TransferInfo of the completed transfer, or None if rejected.
     """
     transfer_info: TransferInfo | None = None
+    monitor_task: asyncio.Task | None = None
 
     try:
         # 1. ECDH Handshake
@@ -331,6 +433,11 @@ async def receive_file(
         transfer_info.transferred_bytes = offset
         await state_callback(transfer_info)
 
+        # START MONITORING FOR LOCAL STATE CHANGES (Pause/Resume from UI)
+        monitor_task = asyncio.create_task(
+            _monitor_local_state(writer, transfer_info)
+        )
+
         tracker = SpeedTracker()
         last_progress_time = time.monotonic()
         mode = "ab" if offset > 0 else "wb"
@@ -362,7 +469,7 @@ async def receive_file(
                     tracker.record(len(decrypted))
 
                     now = time.monotonic()
-                    if now - last_progress_time >= 0.1:
+                    if now - last_progress_time >= 0.2:
                         transfer_info.speed_bps = tracker.get_speed()
                         transfer_info.progress_percent = (
                             transfer_info.transferred_bytes
@@ -401,10 +508,14 @@ async def receive_file(
             transfer_info.error_message = str(e)
             await state_callback(transfer_info)
     finally:
-        writer.close()
-        try:
-            await writer.wait_closed()
-        except Exception:
-            pass
+        if monitor_task:
+            monitor_task.cancel()
+        
+        if writer:
+            writer.close()
+            try:
+                await writer.wait_closed()
+            except Exception:
+                pass
 
     return transfer_info

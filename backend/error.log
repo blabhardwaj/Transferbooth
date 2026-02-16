@@ -1,0 +1,15 @@
+INFO:     Started server process [3180]
+INFO:     Waiting for application startup.
+2026-02-16 06:04:39,278 [INFO] __main__: Starting Transfer Booth services...
+2026-02-16 06:04:39,278 [INFO] discovery.service: Starting discovery on UDP port 41234
+2026-02-16 06:04:39,279 [INFO] discovery.service: Discovery service started
+2026-02-16 06:04:39,279 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-16 06:04:39,280 [INFO] transfer.manager: Transfer receiver listening on port 56806
+2026-02-16 06:04:39,280 [INFO] __main__: Transfer Booth ready ù API: 0.0.0.0:8765, Receiver port: 56806
+INFO:     Application startup complete.
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8765): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+INFO:     Waiting for application shutdown.
+2026-02-16 06:04:39,281 [INFO] __main__: Shutting down Transfer Booth services...
+2026-02-16 06:04:39,281 [INFO] transfer.manager: Transfer manager stopped
+2026-02-16 06:04:39,281 [INFO] discovery.service: Discovery service stopped
+INFO:     Application shutdown complete.

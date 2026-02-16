@@ -48,6 +48,7 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
                 device_name=beacon.device_name,
                 ip_address=addr[0],
                 api_port=beacon.api_port,
+                transfer_port=beacon.transfer_port,
                 platform=beacon.platform,
                 last_seen=time.time(),
             )
@@ -71,6 +72,15 @@ class DiscoveryService:
         self._transport: asyncio.DatagramTransport | None = None
         self._on_peer_change: list = []  # callbacks: async def fn(event, peer)
         self._device_name = DEVICE_NAME
+        self._transfer_port = 0  # Set by main.py after transfer manager starts
+
+    @property
+    def transfer_port(self) -> int:
+        return self._transfer_port
+
+    @transfer_port.setter
+    def transfer_port(self, port: int) -> None:
+        self._transfer_port = port
 
     @property
     def device_name(self) -> str:
@@ -90,20 +100,20 @@ class DiscoveryService:
 
         loop = asyncio.get_running_loop()
 
-        # Create the UDP listener
+        # Create a raw socket with SO_REUSEADDR set BEFORE binding
+        # so multiple instances can share the same UDP port
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+        sock.setblocking(False)
+        sock.bind(("0.0.0.0", DISCOVERY_PORT))
+
+        # Wrap in asyncio transport
         transport, _ = await loop.create_datagram_endpoint(
             lambda: DiscoveryProtocol(self),
-            local_addr=("0.0.0.0", DISCOVERY_PORT),
-            family=socket.AF_INET,
-            allow_broadcast=True,
+            sock=sock,
         )
         self._transport = transport
-
-        # Enable broadcast on the socket
-        sock = transport.get_extra_info("socket")
-        if sock:
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
         self._broadcast_task = asyncio.create_task(self._broadcast_loop())
         self._cleanup_task = asyncio.create_task(self._cleanup_loop())
@@ -141,17 +151,21 @@ class DiscoveryService:
             device_id=DEVICE_ID,
             device_name=self._device_name,
             api_port=API_PORT,
+            transfer_port=self._transfer_port,
             platform=PLATFORM,
         )
 
         while True:
             try:
-                # Update device name in case it changed
+                # Update device name and transfer port in case they changed
                 beacon.device_name = self._device_name
+                beacon.transfer_port = self._transfer_port
                 data = json.dumps(beacon.model_dump()).encode("utf-8")
 
                 if self._transport:
                     self._transport.sendto(data, ("<broadcast>", DISCOVERY_PORT))
+                    # Also send to loopback so instances on the same machine see each other
+                    self._transport.sendto(data, ("127.255.255.255", DISCOVERY_PORT))
 
             except Exception as e:
                 logger.warning(f"Broadcast failed: {e}")

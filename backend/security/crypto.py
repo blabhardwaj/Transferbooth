@@ -14,6 +14,10 @@ from cryptography.hazmat.primitives.asymmetric.x25519 import (
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PublicFormat,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +36,10 @@ def generate_keypair() -> tuple[X25519PrivateKey, bytes]:
         is 32 bytes suitable for transmission.
     """
     private_key = X25519PrivateKey.generate()
-    public_bytes = private_key.public_key().public_key_raw()
+    public_bytes = private_key.public_key().public_bytes(
+        encoding=Encoding.Raw,
+        format=PublicFormat.Raw,
+    )
     return private_key, public_bytes
 
 

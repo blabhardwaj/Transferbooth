@@ -3,7 +3,7 @@
 import logging
 import os
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
 from config import DEFAULT_SAVE_DIR, DEVICE_NAME
@@ -47,29 +47,59 @@ async def list_transfers():
     return {"transfers": [t.model_dump() for t in transfers]}
 
 
+
+@router.post("/select-files")
+async def select_files():
+    """Open a native file picker dialog on the host machine."""
+    import tkinter as tk
+    from tkinter import filedialog
+
+    # Tkinter requires a root window, but we don't want to show it
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    root.attributes("-topmost", True)  # Bring dialog to front
+
+    file_paths = filedialog.askopenfilenames(title="Select files to transfer")
+    root.destroy()
+    
+    return {"files": list(file_paths)}
+
+
+class CreateTransferBody(BaseModel):
+    peer_id: str
+    file_paths: list[str]
+
+
 @router.post("/transfers")
-async def create_transfer(body: TransferRequestBody):
-    """Initiate a file transfer to the specified peer."""
+async def create_transfer(body: CreateTransferBody):
+    """Initiate a file transfer to the specified peer using absolute file paths.
+    
+    No file upload is required; the backend reads files directly from disk.
+    """
     # Find the peer
     peers = await _discovery_service.get_peers()
     peer = next((p for p in peers if p.device_id == body.peer_id), None)
     if not peer:
         raise HTTPException(status_code=404, detail="Peer not found")
 
-    # Validate file paths
+    # Verify files exist
+    valid_paths = []
     for path in body.file_paths:
-        if not os.path.isfile(path):
-            raise HTTPException(
-                status_code=400, detail=f"File not found: {path}"
-            )
+        if os.path.isfile(path):
+            valid_paths.append(path)
+        else:
+            logger.warning(f"Skipping invalid file path: {path}")
 
-    # Queue the transfer — connects to peer's receiver port
+    if not valid_paths:
+        raise HTTPException(status_code=400, detail="No valid files selected")
+
+    # Queue the transfer
     infos = await _transfer_manager.queue_send(
         peer_ip=peer.ip_address,
-        peer_port=peer.api_port,  # This is the peer's receiver port
+        peer_port=peer.transfer_port,
         peer_device_id=peer.device_id,
         peer_device_name=peer.device_name,
-        file_paths=body.file_paths,
+        file_paths=valid_paths,
     )
 
     return {
@@ -77,8 +107,6 @@ async def create_transfer(body: TransferRequestBody):
         "message": f"Queued {len(infos)} file(s) for transfer",
     }
 
-
-@router.post("/transfers/{transfer_id}/pause")
 async def pause_transfer(transfer_id: str):
     await _transfer_manager.pause_transfer(transfer_id)
     return {"status": "paused"}
