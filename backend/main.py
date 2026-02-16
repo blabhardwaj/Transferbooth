@@ -106,6 +106,7 @@ async def websocket_endpoint(websocket: WebSocket):
         await ws_manager.disconnect(websocket)
 
 
+
 # --- Static Files (Frontend) ---
 import sys
 from pathlib import Path
@@ -114,7 +115,6 @@ from fastapi.responses import FileResponse
 
 if getattr(sys, 'frozen', False):
     # Running in PyInstaller bundle
-    # sys._MEIPASS is the temp folder where data is unpacked
     BASE_DIR = Path(sys._MEIPASS) / "frontend" / "dist"
 else:
     # Running in dev mode
@@ -130,12 +130,45 @@ else:
     logger.warning(f"Frontend dist not found at {BASE_DIR}. API only mode.")
 
 
-if __name__ == "__main__":
+def start_server():
+    """Start the Uvicorn server."""
     import uvicorn
-
     uvicorn.run(
         app,
         host=API_HOST,
         port=API_PORT,
-        log_level="info",
+        log_level="error",
     )
+
+
+if __name__ == "__main__":
+    import threading
+    import webview
+    import time
+    
+    # Check if we should run in headless mode (e.g. for debugging)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--headless", action="store_true", help="Run without GUI")
+    args, _ = parser.parse_known_args()
+
+    if args.headless:
+        start_server()
+    else:
+        # Start server in a separate thread
+        t = threading.Thread(target=start_server, daemon=True)
+        t.start()
+
+        # Wait a bit for server to start (simple check)
+        time.sleep(1)
+
+        # Launch the native window
+        webview.create_window(
+            "Transfer Booth",
+            f"http://127.0.0.1:{API_PORT}",
+            width=1024,
+            height=768,
+            min_size=(800, 600)
+        )
+        webview.start()
+

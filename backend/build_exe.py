@@ -21,6 +21,7 @@ def build():
         "main.py",
         "--name=TransferBooth",
         "--onefile",
+        "--noconsole",  # Hide terminal window
         "--clean",
         "--noconfirm",
         # Include frontend assets. source;dest
@@ -41,6 +42,9 @@ def build():
         "--hidden-import=engineio.async_drivers.aiohttp",
         "--hidden-import=tkinter",
         "--hidden-import=tkinter.filedialog",
+        "--hidden-import=webview",
+        "--hidden-import=clr",  # pythonnet for pywebview on Windows
+        "--hidden-import=System",
     ]
     
     # Run PyInstaller

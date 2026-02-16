@@ -7,7 +7,7 @@ A fast, secure, and modern peer-to-peer file transfer application for LAN enviro
 - **Zero-Configuration:** Automatically discovers peers on the local network.
 - **Secure:** End-to-end encryption using X25519 key exchange and AES-256-GCM.
 - **Fast:** Direct peer-to-peer relationships using TCP.
-- **Native Experience:** Integration with Windows file dialogs for zero-copy file selection.
+- **Native Experience:** Runs in its own window (no browser required) with native file dialogs.
 - **Robust:** Support for pausing, resuming, and recovering interrupted transfers.
 - **Modern UI:** Responsive, animated interface built with React and Framer Motion.
 
@@ -17,7 +17,7 @@ A fast, secure, and modern peer-to-peer file transfer application for LAN enviro
 
 1. Download the latest release `TransferBooth.exe`.
 2. Run it! (No installation required).
-3. The server will start and open your default browser to `http://localhost:8765`.
+3. The application will launch in a native window.
 
 ### From Source
 
