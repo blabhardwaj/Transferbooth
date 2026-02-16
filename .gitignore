@@ -26,3 +26,6 @@ frontend/tsc_errors.txt
 # OS
 .DS_Store
 Thumbs.db
+
+# Executable
+TransferBooth.exe
