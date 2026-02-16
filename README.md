@@ -1,48 +1,63 @@
-# Transfer Booth
+# Transfer Booth V1
 
-Fast, secure file transfer over your local network.
+A fast, secure, and modern peer-to-peer file transfer application for LAN environments. Built with Python (FastAPI) and React (TypeScript).
 
-## Features
+## Features 🚀
 
-- 🔍 **Auto-Discovery** — Finds devices on your LAN automatically
-- 🔒 **Encrypted** — AES-256-GCM with ephemeral ECDH keys
-- ⏸️ **Pause / Resume / Cancel** — Full transfer control
-- 📦 **Multi-File** — Send multiple files at once
-- 📊 **Live Stats** — Speed, ETA, progress in real-time
-- ✅ **Acceptance Prompt** — Receiver approves before transfer begins
-- 🔄 **Resumable** — Interrupted transfers pick up where they left off
+- **Zero-Configuration:** Automatically discovers peers on the local network.
+- **Secure:** End-to-end encryption using X25519 key exchange and AES-256-GCM.
+- **Fast:** Direct peer-to-peer relationships using TCP.
+- **Native Experience:** Integration with Windows file dialogs for zero-copy file selection.
+- **Robust:** Support for pausing, resuming, and recovering interrupted transfers.
+- **Modern UI:** Responsive, animated interface built with React and Framer Motion.
 
-## Tech Stack
+## Installation 📦
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Python 3.11+, FastAPI, asyncio |
-| Frontend | React 18, TypeScript, Vite |
-| Networking | UDP broadcast (discovery), TCP (transfer) |
-| Encryption | X25519 ECDH + AES-256-GCM |
-| UI | Framer Motion, Lucide Icons |
+### Standalone Executable (Windows)
 
-## Quick Start
+1. Download the latest release `TransferBooth.exe`.
+2. Run it! (No installation required).
+3. The server will start and open your default browser to `http://localhost:8765`.
 
-```bash
-# Install backend dependencies
-cd backend
-pip install -r requirements.txt
+### From Source
 
-# Install frontend dependencies
-cd ../frontend
-npm install
+**Prerequisites:** Python 3.10+, Node.js 18+
 
-# Run backend (Terminal 1)
-cd ../backend
-python main.py
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/yourusername/transferbooth.git
+   cd transferbooth
+   ```
 
-# Run frontend (Terminal 2)
-cd ../frontend
-npm run dev
-```
+2. **Backend Setup:**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   python main.py
+   ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+3. **Frontend Setup:**
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+## Usage 💡
+
+1. Open the application on two devices connected to the same LAN.
+2. The devices will automatically discover each other.
+3. Click on a peer in the device list.
+4. Select files using the native file picker.
+5. Accept the transfer on the receiving device.
+6. Watch the transfer progress!
+
+## Technology Stack 🛠️
+
+- **Backend:** Python, FastAPI, Asyncio, Cryptography
+- **Frontend:** React, TypeScript, Vite, Framer Motion, Lucide
+- **Protocol:** Custom TCP protocol with ECDH handshake and binary framing
+- **Packaging:** PyInstaller
 
 ## License
 
