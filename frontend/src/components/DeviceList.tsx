@@ -3,7 +3,7 @@
    ============================ */
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Monitor, Laptop, Apple, Wifi } from 'lucide-react';
+import { Monitor, Laptop, Apple, Wifi, Lock } from 'lucide-react';
 import type { Peer } from '../types';
 
 interface Props {
@@ -55,7 +55,10 @@ export default function DeviceList({ devices, selectedId, onSelect }: Props) {
                                     {getPlatformIcon(peer.platform)}
                                 </div>
                                 <div className="device-info">
-                                    <div className="device-name">{peer.device_name}</div>
+                                    <div className="device-name" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        {peer.device_name}
+                                        {peer.is_trusted && <span title="Trusted Peer"><Lock size={14} color="#10b981" /></span>}
+                                    </div>
                                     <div className="device-meta">{peer.ip_address}</div>
                                 </div>
                                 <div className="online-dot" />

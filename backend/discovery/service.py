@@ -22,6 +22,8 @@ from config import (
     PLATFORM,
 )
 from discovery.models import DiscoveryBeacon, Peer
+from discovery.identity import IdentityService
+from discovery.trust import TrustStore
 
 logger = logging.getLogger(__name__)
 
@@ -37,20 +39,32 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
             payload = json.loads(data.decode("utf-8"))
             beacon = DiscoveryBeacon(**payload)
 
-            # Ignore our own beacons
-            if beacon.device_id == DEVICE_ID:
+            # Ignore our own beacons (check both static device_id and ephemeral public_id)
+            if beacon.device_id == DEVICE_ID or beacon.public_id == self.service.identity.public_id:
                 return
             if beacon.app_id != APP_ID:
                 return
 
+            trusted_peer = self.service.trust_store.verify_peer(beacon)
+            if trusted_peer:
+                resolved_name = trusted_peer.real_name
+                peer_device_id = trusted_peer.device_id
+                is_trusted = True
+                logger.debug(f"`{beacon.alias}` resolved to trusted peer {resolved_name}")
+            else:
+                resolved_name = beacon.alias or beacon.device_name
+                peer_device_id = beacon.public_id or beacon.device_id
+                is_trusted = False
+
             peer = Peer(
-                device_id=beacon.device_id,
-                device_name=beacon.device_name,
+                device_id=peer_device_id,
+                device_name=resolved_name,
                 ip_address=addr[0],
                 api_port=beacon.api_port,
                 transfer_port=beacon.transfer_port,
                 platform=beacon.platform,
                 last_seen=time.time(),
+                is_trusted=is_trusted,
             )
             self.service.update_peer(peer)
 
@@ -64,7 +78,7 @@ class DiscoveryProtocol(asyncio.DatagramProtocol):
 class DiscoveryService:
     """Manages LAN device discovery via UDP broadcast."""
 
-    def __init__(self) -> None:
+    def __init__(self, identity, trust_store) -> None:
         self._peers: dict[str, Peer] = {}
         self._lock = asyncio.Lock()
         self._broadcast_task: asyncio.Task | None = None
@@ -73,6 +87,9 @@ class DiscoveryService:
         self._on_peer_change: list = []  # callbacks: async def fn(event, peer)
         self._device_name = DEVICE_NAME
         self._transfer_port = 0  # Set by main.py after transfer manager starts
+        
+        self.identity = identity
+        self.trust_store = trust_store
 
     @property
     def transfer_port(self) -> int:
@@ -146,26 +163,54 @@ class DiscoveryService:
 
     async def _broadcast_loop(self) -> None:
         """Periodically send a discovery beacon."""
-        beacon = DiscoveryBeacon(
-            app_id=APP_ID,
-            device_id=DEVICE_ID,
-            device_name=self._device_name,
-            api_port=API_PORT,
-            transfer_port=self._transfer_port,
-            platform=PLATFORM,
-        )
-
         while True:
             try:
-                # Update device name and transfer port in case they changed
-                beacon.device_name = self._device_name
-                beacon.transfer_port = self._transfer_port
+                # Update dynamic fields
+                # We send the ephemeral `public_id` and `alias` to hide our real identity.
+                # However, we still supply `device_id` as the real DEVICE_ID for backward compatibility 
+                # momentarily. Wait, design says NO static tracking! We must mask `device_id`.
+                
+                beacon = DiscoveryBeacon(
+                    app_id=APP_ID,
+                    device_id=self.identity.public_id, # Deprecated in favor of public_id but needed for old clients
+                    device_name=self.identity.alias,  # Mask real device name
+                    api_port=API_PORT,
+                    transfer_port=self._transfer_port,
+                    platform=PLATFORM,
+                    alias=self.identity.alias,
+                    public_id=self.identity.public_id,
+                    auth_tag="", # Computed next
+                )
+                
+                # Sign the beacon content for friends
+                signable_bytes = self.trust_store.get_signable_bytes(beacon)
+                beacon.auth_tag = self.identity.sign(signable_bytes).hex()
+
                 data = json.dumps(beacon.model_dump()).encode("utf-8")
 
                 if self._transport:
-                    self._transport.sendto(data, ("<broadcast>", DISCOVERY_PORT))
-                    # Also send to loopback so instances on the same machine see each other
-                    self._transport.sendto(data, ("127.255.255.255", DISCOVERY_PORT))
+                    # Collect broadcast addresses
+                    bcast_ips = ["<broadcast>", "255.255.255.255", "127.255.255.255"]
+                    try:
+                        host_name = socket.gethostname()
+                        _, _, ips = socket.gethostbyname_ex(host_name)
+                        for ip in ips:
+                            if not ip.startswith("127."):
+                                # Simple heuristic for /24 subnets
+                                parts = ip.split(".")
+                                if len(parts) == 4:
+                                    parts[3] = "255"
+                                    bcast_ips.append(".".join(parts))
+                    except Exception as e:
+                        logger.debug(f"Error resolving local IPs: {e}")
+
+                    # Send to all gathered addresses
+                    for bcast_ip in set(bcast_ips):
+                        try:
+                            self._transport.sendto(data, (bcast_ip, DISCOVERY_PORT))
+                        except Exception as inner_e:
+                            # Some interfaces might not support broadcast, ignore
+                            pass
 
             except Exception as e:
                 logger.warning(f"Broadcast failed: {e}")

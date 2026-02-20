@@ -29,3 +29,23 @@ Thumbs.db
 
 # Executable
 TransferBooth.exe
+
+# Research / Overleaf
+RESEARCH_PAPER.*
+Survey of Secure P2P LAN File Sharing Systems.pdf
+TransferBooth_Overleaf.zip
+llncs.cls
+splncs04.bst
+overleaf_upload/
+*.aux
+*.bbl
+*.blg
+*.fls
+*.log
+*.out
+*.fdb_latexmk
+*.synctex.gz
+*.pdf
+
+# Benchmarking
+benchmark/

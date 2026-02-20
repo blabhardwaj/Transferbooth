@@ -2,6 +2,7 @@
    TransferCard — single file transfer display
    ============================ */
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     ArrowUp,
@@ -32,7 +33,11 @@ function formatSize(bytes: number): string {
 
 function formatSpeed(bps: number): string {
     if (bps === 0) return '—';
-    return `${formatSize(bps)}/s`;
+    const bits = bps * 8;
+    const units = ['bps', 'Kbps', 'Mbps', 'Gbps'];
+    const i = Math.floor(Math.log(bits) / Math.log(1024));
+    const speed = bits / Math.pow(1024, i);
+    return `${speed.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
 }
 
 function formatETA(seconds: number): string {
@@ -49,7 +54,7 @@ function formatETA(seconds: number): string {
 }
 
 const isActive = (state: string) =>
-    ['transferring', 'paused', 'connecting', 'pending', 'awaiting_acceptance'].includes(state);
+    ['transferring', 'paused', 'paused_by_peer', 'connecting', 'pending', 'awaiting_acceptance'].includes(state);
 
 export default function TransferCard({
     transfer,
@@ -60,6 +65,7 @@ export default function TransferCard({
     const isSending = transfer.direction === 'sending';
     const showControls = isActive(transfer.state);
     const showProgress = transfer.state !== 'pending' && transfer.state !== 'awaiting_acceptance';
+    const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
     return (
         <motion.div
@@ -89,7 +95,7 @@ export default function TransferCard({
                 </div>
 
                 <div className="transfer-controls">
-                    {showControls && (
+                    {showControls && !showCancelConfirm && (
                         <>
                             {transfer.state === 'transferring' && (
                                 <button
@@ -109,55 +115,86 @@ export default function TransferCard({
                                     <Play size={14} />
                                 </button>
                             )}
+                            {/* Do not show Resume if state is paused_by_peer */}
                             <button
                                 className="btn btn-ghost btn-icon"
-                                onClick={() => onCancel(transfer.transfer_id)}
+                                onClick={() => setShowCancelConfirm(true)}
                                 title="Cancel"
                             >
                                 <X size={14} />
                             </button>
                         </>
                     )}
-                    <span className={`state-badge ${transfer.state}`}>
-                        {transfer.state.replace('_', ' ')}
-                    </span>
+                    {!showCancelConfirm && (
+                        <span className={`state-badge ${transfer.state}`}>
+                            {transfer.state.replace(/_/g, ' ')}
+                        </span>
+                    )}
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            {showProgress && (
-                <div className="progress-container">
-                    <div className="progress-bar">
-                        <div
-                            className="progress-fill"
-                            style={{ width: `${Math.min(transfer.progress_percent, 100)}%` }}
-                        />
-                    </div>
-                    <div className="progress-label">
-                        <span>{transfer.progress_percent.toFixed(1)}%</span>
-                        <span>
-                            {formatSize(transfer.transferred_bytes)} / {formatSize(transfer.file_size)}
-                        </span>
+            {/* Cancel Confirmation Dialog Overlay or In-Place Render */}
+            {showCancelConfirm ? (
+                <div className="cancel-confirm" style={{ padding: '0.5rem', textAlign: 'center', background: 'rgba(0,0,0,0.05)', borderRadius: '6px', margin: '0.5rem' }}>
+                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>Are you sure you want to cancel?</p>
+                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                        <button
+                            className="btn btn-ghost"
+                            style={{ flex: 1, padding: '0.25rem' }}
+                            onClick={() => setShowCancelConfirm(false)}
+                        >
+                            No
+                        </button>
+                        <button
+                            className="btn btn-danger"
+                            style={{ flex: 1, padding: '0.25rem', background: '#e11d48', color: 'white' }}
+                            onClick={() => {
+                                setShowCancelConfirm(false);
+                                onCancel(transfer.transfer_id);
+                            }}
+                        >
+                            Yes
+                        </button>
                     </div>
                 </div>
-            )}
+            ) : (
+                <>
+                    {/* Progress Bar */}
+                    {showProgress && (
+                        <div className="progress-container">
+                            <div className="progress-bar">
+                                <div
+                                    className="progress-fill"
+                                    style={{ width: `${Math.min(transfer.progress_percent, 100)}%` }}
+                                />
+                            </div>
+                            <div className="progress-label">
+                                <span>{transfer.progress_percent.toFixed(1)}%</span>
+                                <span>
+                                    {formatSize(transfer.transferred_bytes)} / {formatSize(transfer.file_size)}
+                                </span>
+                            </div>
+                        </div>
+                    )}
 
-            {/* Stats */}
-            {(transfer.state === 'transferring' || transfer.state === 'paused') && (
-                <div className="transfer-stats">
-                    <div className="transfer-stat">
-                        <Zap size={12} />
-                        <span>{formatSpeed(transfer.speed_bps)}</span>
-                    </div>
-                    <div className="transfer-stat">
-                        <Clock size={12} />
-                        <span>{formatETA(transfer.eta_seconds)}</span>
-                    </div>
-                    <div className="transfer-stat">
-                        <HardDrive size={12} />
-                        <span>{formatSize(transfer.transferred_bytes)}</span>
-                    </div>
-                </div>
+                    {/* Stats */}
+                    {(transfer.state === 'transferring' || transfer.state === 'paused' || transfer.state === 'paused_by_peer') && (
+                        <div className="transfer-stats">
+                            <div className="transfer-stat">
+                                <Zap size={12} />
+                                <span>{formatSpeed(transfer.speed_bps)}</span>
+                            </div>
+                            <div className="transfer-stat">
+                                <Clock size={12} />
+                                <span>{formatETA(transfer.eta_seconds)}</span>
+                            </div>
+                            <div className="transfer-stat">
+                                <HardDrive size={12} />
+                                <span>{formatSize(transfer.transferred_bytes)}</span>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
         </motion.div>
     );

@@ -12,6 +12,7 @@ class TransferState(str, Enum):
     CONNECTING = "connecting"
     TRANSFERRING = "transferring"
     PAUSED = "paused"
+    PAUSED_BY_PEER = "paused_by_peer"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -66,3 +67,5 @@ class FileMetadata(BaseModel):
     file_size: int
     sender_device_id: str
     sender_device_name: str
+    identity_public_key: str = ""
+    identity_signature: str = ""

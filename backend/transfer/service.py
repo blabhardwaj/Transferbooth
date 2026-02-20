@@ -119,7 +119,7 @@ class SpeedTracker:
         """Returns speed in bytes/sec."""
         if len(self._samples) < 2:
             return 0.0
-        total_bytes = sum(b for _, b in self._samples)
+        total_bytes = sum(b for _, b in self._samples[1:])
         elapsed = self._samples[-1][0] - self._samples[0][0]
         if elapsed <= 0:
             return 0.0
@@ -149,7 +149,7 @@ async def _monitor_remote_commands(
 
             if msg_type == MessageType.PAUSE:
                 logger.info(f"Received PAUSE from receiver for {transfer_info.file_name}")
-                transfer_info.state = TransferState.PAUSED
+                transfer_info.state = TransferState.PAUSED_BY_PEER
                 await state_callback(transfer_info)
             elif msg_type == MessageType.RESUME:
                 logger.info(f"Received RESUME from receiver for {transfer_info.file_name}")
@@ -159,6 +159,7 @@ async def _monitor_remote_commands(
                 logger.info(f"Received CANCEL from receiver for {transfer_info.file_name}")
                 transfer_info.state = TransferState.CANCELLED
                 await state_callback(transfer_info)
+                return
     except asyncio.CancelledError:
         pass
 
@@ -208,6 +209,8 @@ async def send_file(
     transfer_info: TransferInfo,
     progress_callback,
     state_callback,
+    identity_service = None,
+    trust_store = None,
 ) -> None:
     """
     Send a single file to a peer.
@@ -234,24 +237,49 @@ async def send_file(
         session_key = await perform_handshake_sender(reader, writer)
 
         # 2. Send metadata
+        signature = ""
+        pub_key = ""
+        if identity_service:
+            pub_key = identity_service.get_public_bytes().hex()
+            signature = identity_service.sign(transfer_info.transfer_id.encode('utf-8')).hex()
+
         metadata = FileMetadata(
             transfer_id=transfer_info.transfer_id,
             file_name=transfer_info.file_name,
             file_size=transfer_info.file_size,
-            sender_device_id=DEVICE_ID,
-            sender_device_name=transfer_info.peer_device_name,
+            sender_device_id=identity_service.public_id if identity_service else DEVICE_ID,
+            sender_device_name=identity_service.alias if identity_service else DEVICE_NAME,
+            identity_public_key=pub_key,
+            identity_signature=signature,
         )
         metadata_json = json.dumps(metadata.model_dump()).encode("utf-8")
         await send_message(writer, MessageType.METADATA, metadata_json)
 
         # 3. Wait for accept/reject
-        msg_type, _ = await recv_message(reader)
+        msg_type, payload = await recv_message(reader)
         if msg_type == MessageType.REJECT:
             transfer_info.state = TransferState.REJECTED
             await state_callback(transfer_info)
             return
         if msg_type != MessageType.ACCEPT:
             raise ConnectionError(f"Expected ACCEPT/REJECT, got {msg_type:#x}")
+
+        peer_identity = None
+        if payload and trust_store:
+            try:
+                data = json.loads(payload.decode('utf-8'))
+                pk = data.get('identity_public_key')
+                sig = data.get('identity_signature')
+                real_name = data.get('device_name')
+                
+                from cryptography.hazmat.primitives.asymmetric import ed25519
+                pub_key_obj = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(pk))
+                pub_key_obj.verify(bytes.fromhex(sig), transfer_info.transfer_id.encode('utf-8'))
+                peer_identity = (transfer_info.peer_device_id, real_name, pk)
+                transfer_info.peer_device_name = real_name
+                await state_callback(transfer_info)
+            except Exception as e:
+                logger.warning(f"Failed to verify receiver identity: {e}")
 
         # 4. Receive resume offset
         msg_type, offset_data = await recv_message(reader)
@@ -279,38 +307,25 @@ async def send_file(
                 if transfer_info.state == TransferState.CANCELLED:
                     await send_message(writer, MessageType.CANCEL)
                     return
-                if transfer_info.state == TransferState.PAUSED:
-                    # Notify receiver we are pausing (confirmation) - optional but good practice
-                    # Actually, if the pause came FROM receiver, echoing it back might be redundant but harmless.
-                    # If pause came from sender UI, we MUST send it.
-                    # To avoid determining origin, we can just send PAUSE message if we aren't already receiving one?
-                    # Simpler: The sending loop just stops sending chunks.
-                    # BUT if we initiated the pause, we should tell receiver.
-                    # Let's trust that if the state is PAUSED, the receiver knows or we should tell them.
+                if transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
+                    if transfer_info.state == TransferState.PAUSED:
+                        await send_message(writer, MessageType.PAUSE)
                     
-                    # Problem: If receiver sent PAUSE, sending PAUSE back is fine.
-                    # If sender UI set PAUSE, we MUST send PAUSE.
-                    # So sending it is safer.
-                    await send_message(writer, MessageType.PAUSE)
-                    
-                    # Wait until resumed or cancelled
-                    while transfer_info.state == TransferState.PAUSED:
+                    while transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
                         await asyncio.sleep(0.1)
                     
                     if transfer_info.state == TransferState.CANCELLED:
                         await send_message(writer, MessageType.CANCEL)
                         return
                     
-                    await send_message(writer, MessageType.RESUME)
+                    if transfer_info.state == TransferState.TRANSFERRING:
+                        await send_message(writer, MessageType.RESUME)
 
-                chunk = f.read(CHUNK_SIZE)
+                chunk = await asyncio.to_thread(f.read, CHUNK_SIZE)
                 if not chunk:
                     break
 
-                # Yield control to allow monitor_task to run
-                await asyncio.sleep(0)
-
-                encrypted = encrypt_chunk(session_key, chunk)
+                encrypted = await asyncio.to_thread(encrypt_chunk, session_key, chunk)
                 await send_message(writer, MessageType.DATA_CHUNK, encrypted)
 
                 transfer_info.transferred_bytes += len(chunk)
@@ -336,6 +351,10 @@ async def send_file(
 
         # 6. Send completion
         await send_message(writer, MessageType.TRANSFER_COMPLETE)
+        
+        if peer_identity and trust_store:
+            trust_store.add_trusted_peer(*peer_identity)
+            
         transfer_info.state = TransferState.COMPLETED
         transfer_info.progress_percent = 100.0
         transfer_info.speed_bps = 0
@@ -347,9 +366,10 @@ async def send_file(
         await state_callback(transfer_info)
     except Exception as e:
         logger.error(f"Send error for {transfer_info.file_name}: {e}")
-        transfer_info.state = TransferState.FAILED
-        transfer_info.error_message = str(e)
-        await state_callback(transfer_info)
+        if transfer_info.state != TransferState.CANCELLED:
+            transfer_info.state = TransferState.FAILED
+            transfer_info.error_message = str(e)
+            await state_callback(transfer_info)
     finally:
         if monitor_task:
             monitor_task.cancel()
@@ -369,6 +389,8 @@ async def receive_file(
     accept_callback,
     progress_callback,
     state_callback,
+    identity_service = None,
+    trust_store = None,
 ) -> TransferInfo | None:
     """
     Handle an incoming file transfer connection.
@@ -397,13 +419,30 @@ async def receive_file(
 
         metadata = FileMetadata(**json.loads(metadata_raw.decode("utf-8")))
 
+        peer_identity = None
+        real_sender_name = metadata.sender_device_name
+        
+        if metadata.identity_public_key and metadata.identity_signature and trust_store:
+            try:
+                from cryptography.hazmat.primitives.asymmetric import ed25519
+                pub_key_obj = ed25519.Ed25519PublicKey.from_public_bytes(bytes.fromhex(metadata.identity_public_key))
+                pub_key_obj.verify(bytes.fromhex(metadata.identity_signature), metadata.transfer_id.encode('utf-8'))
+                
+                known_peer = trust_store.get_peer_by_key(metadata.identity_public_key)
+                if known_peer:
+                    real_sender_name = known_peer.real_name
+                
+                peer_identity = (metadata.sender_device_id, real_sender_name, metadata.identity_public_key)
+            except Exception as e:
+                logger.warning(f"Failed to verify sender identity: {e}")
+
         transfer_info = TransferInfo(
             transfer_id=metadata.transfer_id,
             file_name=metadata.file_name,
             file_size=metadata.file_size,
             direction=TransferDirection.RECEIVING,
             peer_device_id=metadata.sender_device_id,
-            peer_device_name=metadata.sender_device_name,
+            peer_device_name=real_sender_name,
             state=TransferState.AWAITING_ACCEPTANCE,
         )
         await state_callback(transfer_info)
@@ -416,7 +455,14 @@ async def receive_file(
             await state_callback(transfer_info)
             return transfer_info
 
-        await send_message(writer, MessageType.ACCEPT)
+        accept_payload = {}
+        if identity_service:
+            accept_payload = {
+                "identity_public_key": identity_service.get_public_bytes().hex(),
+                "identity_signature": identity_service.sign(transfer_info.transfer_id.encode('utf-8')).hex(),
+                "device_name": DEVICE_NAME,
+            }
+        await send_message(writer, MessageType.ACCEPT, json.dumps(accept_payload).encode('utf-8'))
 
         # 4. Check for partial file (resume support)
         file_path = os.path.join(save_dir, metadata.file_name)
@@ -444,6 +490,9 @@ async def receive_file(
 
         with open(file_path, mode) as f:
             while True:
+                if transfer_info.state == TransferState.CANCELLED:
+                    return transfer_info
+
                 msg_type, payload = await recv_message(reader)
 
                 if msg_type == MessageType.TRANSFER_COMPLETE:
@@ -453,7 +502,7 @@ async def receive_file(
                     await state_callback(transfer_info)
                     return transfer_info
                 elif msg_type == MessageType.PAUSE:
-                    transfer_info.state = TransferState.PAUSED
+                    transfer_info.state = TransferState.PAUSED_BY_PEER
                     await state_callback(transfer_info)
                     continue
                 elif msg_type == MessageType.RESUME:
@@ -461,9 +510,9 @@ async def receive_file(
                     await state_callback(transfer_info)
                     continue
                 elif msg_type == MessageType.DATA_CHUNK:
-                    decrypted = decrypt_chunk(session_key, payload)
-                    f.write(decrypted)
-                    f.flush()
+                    decrypted = await asyncio.to_thread(decrypt_chunk, session_key, payload)
+                    await asyncio.to_thread(f.write, decrypted)
+                    await asyncio.to_thread(f.flush)
 
                     transfer_info.transferred_bytes += len(decrypted)
                     tracker.record(len(decrypted))
@@ -490,6 +539,9 @@ async def receive_file(
                     logger.warning(f"Unexpected message type during receive: {msg_type:#x}")
 
         # 6. Complete
+        if peer_identity and trust_store:
+            trust_store.add_trusted_peer(*peer_identity)
+            
         transfer_info.state = TransferState.COMPLETED
         transfer_info.progress_percent = 100.0
         transfer_info.speed_bps = 0
@@ -503,7 +555,7 @@ async def receive_file(
             await state_callback(transfer_info)
     except Exception as e:
         logger.error(f"Receive error: {e}")
-        if transfer_info:
+        if transfer_info and transfer_info.state != TransferState.CANCELLED:
             transfer_info.state = TransferState.FAILED
             transfer_info.error_message = str(e)
             await state_callback(transfer_info)

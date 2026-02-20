@@ -10,6 +10,7 @@ export interface Peer {
     api_port: number;
     platform: 'windows' | 'darwin' | 'linux';
     last_seen: number;
+    is_trusted?: boolean;
 }
 
 // --- Transfer ---
@@ -20,6 +21,7 @@ export type TransferState =
     | 'connecting'
     | 'transferring'
     | 'paused'
+    | 'paused_by_peer'
     | 'completed'
     | 'failed'
     | 'cancelled';

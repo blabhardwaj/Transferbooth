@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 class TransferManager:
     """Manages all active and completed file transfers."""
 
-    def __init__(self) -> None:
+    def __init__(self, identity_service, trust_store) -> None:
         self._transfers: dict[str, TransferInfo] = {}
         self._tasks: dict[str, asyncio.Task] = {}
         self._lock = asyncio.Lock()
@@ -39,6 +39,8 @@ class TransferManager:
         self._receiver_server: asyncio.Server | None = None
         self._save_dir = DEFAULT_SAVE_DIR
         self._device_name = ""
+        self._identity_service = identity_service
+        self._trust_store = trust_store
 
     @property
     def save_dir(self) -> str:
@@ -149,6 +151,8 @@ class TransferManager:
             transfer_info=info,
             progress_callback=self._on_progress,
             state_callback=self._on_state_change,
+            identity_service=self._identity_service,
+            trust_store=self._trust_store,
         )
         # Clean up task reference
         self._tasks.pop(info.transfer_id, None)
@@ -164,6 +168,8 @@ class TransferManager:
             accept_callback=self._prompt_accept,
             progress_callback=self._on_progress,
             state_callback=self._on_state_change,
+            identity_service=self._identity_service,
+            trust_store=self._trust_store,
         )
 
     async def _prompt_accept(self, transfer_info: TransferInfo) -> bool:
@@ -218,6 +224,7 @@ class TransferManager:
             TransferState.PENDING,
             TransferState.TRANSFERRING,
             TransferState.PAUSED,
+            TransferState.PAUSED_BY_PEER,
             TransferState.AWAITING_ACCEPTANCE,
         ):
             info.state = TransferState.CANCELLED
