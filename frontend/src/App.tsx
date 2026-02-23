@@ -14,6 +14,7 @@ import { useTransfers } from './hooks/useTransfers';
 import DeviceList from './components/DeviceList';
 import FileSelector from './components/FileSelector';
 import TransferQueue from './components/TransferQueue';
+import TransferHistory from './components/TransferHistory';
 import { Toasts, AcceptDialog } from './components/Notifications';
 import Settings from './components/Settings';
 
@@ -33,6 +34,7 @@ function App() {
     const [selectedPeer, setSelectedPeer] = useState<Peer | null>(null);
     const [showFileSelector, setShowFileSelector] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const [activeTab, setActiveTab] = useState<'active' | 'history'>('active');
 
     const handleDeviceSelect = useCallback((peer: Peer) => {
         setSelectedPeer(peer);
@@ -97,6 +99,7 @@ function App() {
                             devices={devices}
                             selectedId={selectedPeer?.device_id ?? null}
                             onSelect={handleDeviceSelect}
+                            onDropFiles={handleSendFiles}
                         />
                     )}
                 </div>
@@ -122,15 +125,33 @@ function App() {
                         />
                         Transfers
                     </h2>
+                    <div className="tab-switcher">
+                        <button
+                            className={`tab-btn ${activeTab === 'active' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('active')}
+                        >
+                            Active Transfers
+                        </button>
+                        <button
+                            className={`tab-btn ${activeTab === 'history' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('history')}
+                        >
+                            History
+                        </button>
+                    </div>
                 </div>
 
                 <div className="main-body">
-                    <TransferQueue
-                        transfers={transfers}
-                        onPause={handlePause}
-                        onResume={handleResume}
-                        onCancel={handleCancel}
-                    />
+                    {activeTab === 'active' ? (
+                        <TransferQueue
+                            transfers={transfers}
+                            onPause={handlePause}
+                            onResume={handleResume}
+                            onCancel={handleCancel}
+                        />
+                    ) : (
+                        <TransferHistory />
+                    )}
                 </div>
             </main>
 

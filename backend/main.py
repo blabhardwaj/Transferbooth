@@ -16,6 +16,8 @@ from api.routes import init_routes, router
 from api.websocket import ConnectionManager
 from config import API_HOST, API_PORT, DEVICE_NAME
 from discovery.service import DiscoveryService
+from discovery.identity import IdentityService
+from discovery.trust import TrustStore
 from transfer.manager import TransferManager
 
 # --- Logging ---
@@ -26,8 +28,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --- Service singletons ---
-discovery_service = DiscoveryService()
-transfer_manager = TransferManager()
+identity_service = IdentityService()
+trust_store = TrustStore()
+
+discovery_service = DiscoveryService(identity_service, trust_store)
+transfer_manager = TransferManager(identity_service, trust_store)
 ws_manager = ConnectionManager()
 
 

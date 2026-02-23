@@ -2,6 +2,7 @@
    DeviceList — shows discovered LAN peers
    ============================ */
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Monitor, Laptop, Apple, Wifi, Lock } from 'lucide-react';
 import type { Peer } from '../types';
@@ -10,6 +11,7 @@ interface Props {
     devices: Peer[];
     selectedId: string | null;
     onSelect: (peer: Peer) => void;
+    onDropFiles?: (peer: Peer, filePaths: string[]) => void;
 }
 
 function getPlatformIcon(platform: string) {
@@ -23,7 +25,39 @@ function getPlatformIcon(platform: string) {
     }
 }
 
-export default function DeviceList({ devices, selectedId, onSelect }: Props) {
+export default function DeviceList({ devices, selectedId, onSelect, onDropFiles }: Props) {
+    const [dragActiveId, setDragActiveId] = useState<string | null>(null);
+
+    const handleDragOver = (e: React.DragEvent, peerId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActiveId(peerId);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActiveId(null);
+    };
+
+    const handleDrop = async (e: React.DragEvent, peer: Peer) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragActiveId(null);
+
+        if (!onDropFiles) return;
+
+        const files = Array.from(e.dataTransfer.files);
+        // pywebview injects absolute path via pywebviewFullPath
+        const paths = files
+            .map(file => (file as any).pywebviewFullPath)
+            .filter(Boolean) as string[];
+
+        if (paths.length > 0) {
+            onDropFiles(peer, paths);
+        }
+    };
+
     return (
         <div>
             <div className="section-title">
@@ -43,8 +77,11 @@ export default function DeviceList({ devices, selectedId, onSelect }: Props) {
                         {devices.map((peer) => (
                             <motion.div
                                 key={peer.device_id}
-                                className={`device-card ${selectedId === peer.device_id ? 'selected' : ''}`}
+                                className={`device-card ${selectedId === peer.device_id ? 'selected' : ''} ${dragActiveId === peer.device_id ? 'drag-active' : ''}`}
                                 onClick={() => onSelect(peer)}
+                                onDragOver={(e) => handleDragOver(e, peer.device_id)}
+                                onDragLeave={handleDragLeave}
+                                onDrop={(e) => handleDrop(e, peer)}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -20 }}

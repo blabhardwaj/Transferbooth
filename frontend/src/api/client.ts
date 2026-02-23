@@ -30,6 +30,11 @@ export async function getTransfers(): Promise<TransferInfo[]> {
     return data.transfers;
 }
 
+export async function getHistory(): Promise<any[]> {
+    const data = await request<{ history: any[] }>('/history');
+    return data.history;
+}
+
 export async function selectFiles(): Promise<string[]> {
     const data = await request<{ files: string[] }>('/select-files', { method: 'POST' });
     return data.files;

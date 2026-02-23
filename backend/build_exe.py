@@ -24,6 +24,7 @@ def build():
         "--noconsole",  # Hide terminal window
         "--clean",
         "--noconfirm",
+        "--icon=icon.ico",
         # Include frontend assets. source;dest
         f"--add-data={frontend_dist};frontend/dist",
         

@@ -1,0 +1,12 @@
+2026-02-21 01:56:19,154 [INFO] discovery.identity: Initialized IdentityService with alias: Turbo Octopus
+2026-02-21 01:56:19,155 [INFO] discovery.trust: Loaded 3 trusted peers.
+2026-02-21 01:56:19,341 [INFO] __main__: Starting Transfer Booth services...
+2026-02-21 01:56:19,342 [INFO] discovery.service: Starting discovery on UDP port 41234
+2026-02-21 01:56:19,342 [INFO] discovery.service: Discovery service started
+2026-02-21 01:56:19,360 [WARNING] discovery.service: Discovery UDP error: [WinError 10022] An invalid argument was supplied
+2026-02-21 01:56:19,362 [INFO] transfer.manager: Transfer receiver listening on port 50497
+2026-02-21 01:56:19,362 [INFO] __main__: Transfer Booth ready ù API: 0.0.0.0:8765, Receiver port: 50497
+ERROR:    [Errno 10048] error while attempting to bind on address ('0.0.0.0', 8765): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
+2026-02-21 01:56:19,363 [INFO] __main__: Shutting down Transfer Booth services...
+2026-02-21 01:56:19,363 [INFO] transfer.manager: Transfer manager stopped
+2026-02-21 01:56:19,364 [INFO] discovery.service: Discovery service stopped

@@ -226,6 +226,7 @@ async def send_file(
     reader: asyncio.StreamReader | None = None
     writer: asyncio.StreamWriter | None = None
     monitor_task: asyncio.Task | None = None
+    producer_task: asyncio.Task | None = None
 
     try:
         transfer_info.state = TransferState.CONNECTING
@@ -300,54 +301,80 @@ async def send_file(
         tracker = SpeedTracker()
         last_progress_time = time.monotonic()
 
-        with open(file_path, "rb") as f:
-            f.seek(offset)
-            while True:
-                # Check for pause/cancel
+        queue = asyncio.Queue(maxsize=4)
+        
+        async def _disk_producer():
+            try:
+                with open(file_path, "rb") as f:
+                    f.seek(offset)
+                    while transfer_info.state not in (TransferState.CANCELLED, TransferState.FAILED):
+                        while transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
+                            await asyncio.sleep(0.1)
+                            if transfer_info.state == TransferState.CANCELLED:
+                                return
+                        
+                        chunk = await asyncio.to_thread(f.read, CHUNK_SIZE)
+                        if not chunk:
+                            await queue.put((None, None))
+                            break
+                        encrypted = await asyncio.to_thread(encrypt_chunk, session_key, chunk)
+                        await queue.put((len(chunk), encrypted))
+            except Exception as e:
+                await queue.put((e, None))
+
+        producer_task = asyncio.create_task(_disk_producer())
+
+        while True:
+            if transfer_info.state == TransferState.CANCELLED:
+                await send_message(writer, MessageType.CANCEL)
+                return
+            if transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
+                if transfer_info.state == TransferState.PAUSED:
+                    await send_message(writer, MessageType.PAUSE)
+                
+                while transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
+                    await asyncio.sleep(0.1)
+                
                 if transfer_info.state == TransferState.CANCELLED:
                     await send_message(writer, MessageType.CANCEL)
                     return
-                if transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
-                    if transfer_info.state == TransferState.PAUSED:
-                        await send_message(writer, MessageType.PAUSE)
-                    
-                    while transfer_info.state in (TransferState.PAUSED, TransferState.PAUSED_BY_PEER):
-                        await asyncio.sleep(0.1)
-                    
-                    if transfer_info.state == TransferState.CANCELLED:
-                        await send_message(writer, MessageType.CANCEL)
-                        return
-                    
-                    if transfer_info.state == TransferState.TRANSFERRING:
-                        await send_message(writer, MessageType.RESUME)
+                
+                if transfer_info.state == TransferState.TRANSFERRING:
+                    await send_message(writer, MessageType.RESUME)
 
-                chunk = await asyncio.to_thread(f.read, CHUNK_SIZE)
-                if not chunk:
-                    break
+            try:
+                res = await asyncio.wait_for(queue.get(), timeout=1.0)
+            except asyncio.TimeoutError:
+                continue
 
-                encrypted = await asyncio.to_thread(encrypt_chunk, session_key, chunk)
-                await send_message(writer, MessageType.DATA_CHUNK, encrypted)
+            if isinstance(res[0], Exception):
+                raise res[0]
+            
+            chunk_len, encrypted = res
+            if chunk_len is None:
+                break
 
-                transfer_info.transferred_bytes += len(chunk)
-                tracker.record(len(chunk))
+            await send_message(writer, MessageType.DATA_CHUNK, encrypted)
 
-                # Update progress at most every 200ms
-                now = time.monotonic()
-                if now - last_progress_time >= 0.2:
-                    transfer_info.speed_bps = tracker.get_speed()
-                    transfer_info.progress_percent = (
-                        transfer_info.transferred_bytes / transfer_info.file_size * 100
-                        if transfer_info.file_size > 0
-                        else 100
-                    )
-                    remaining_bytes = transfer_info.file_size - transfer_info.transferred_bytes
-                    transfer_info.eta_seconds = (
-                        remaining_bytes / transfer_info.speed_bps
-                        if transfer_info.speed_bps > 0
-                        else 0
-                    )
-                    await progress_callback(transfer_info)
-                    last_progress_time = now
+            transfer_info.transferred_bytes += chunk_len
+            tracker.record(chunk_len)
+
+            now = time.monotonic()
+            if now - last_progress_time >= 0.2:
+                transfer_info.speed_bps = tracker.get_speed()
+                transfer_info.progress_percent = (
+                    transfer_info.transferred_bytes / transfer_info.file_size * 100
+                    if transfer_info.file_size > 0
+                    else 100
+                )
+                remaining_bytes = transfer_info.file_size - transfer_info.transferred_bytes
+                transfer_info.eta_seconds = (
+                    remaining_bytes / transfer_info.speed_bps
+                    if transfer_info.speed_bps > 0
+                    else 0
+                )
+                await progress_callback(transfer_info)
+                last_progress_time = now
 
         # 6. Send completion
         await send_message(writer, MessageType.TRANSFER_COMPLETE)
@@ -407,6 +434,7 @@ async def receive_file(
     """
     transfer_info: TransferInfo | None = None
     monitor_task: asyncio.Task | None = None
+    producer_task: asyncio.Task | None = None
 
     try:
         # 1. ECDH Handshake
@@ -488,12 +516,35 @@ async def receive_file(
         last_progress_time = time.monotonic()
         mode = "ab" if offset > 0 else "wb"
 
+        queue = asyncio.Queue(maxsize=4)
+        decryption_failures = 0
+
+        async def _net_producer():
+            try:
+                while True:
+                    msg_type, payload = await recv_message(reader)
+                    await queue.put((msg_type, payload))
+                    if msg_type in (MessageType.TRANSFER_COMPLETE, MessageType.CANCEL, MessageType.REJECT):
+                        break
+            except Exception as e:
+                await queue.put((e, None))
+
+        producer_task = asyncio.create_task(_net_producer())
+
         with open(file_path, mode) as f:
             while True:
                 if transfer_info.state == TransferState.CANCELLED:
                     return transfer_info
 
-                msg_type, payload = await recv_message(reader)
+                try:
+                    res = await asyncio.wait_for(queue.get(), timeout=1.0)
+                except asyncio.TimeoutError:
+                    continue
+
+                if isinstance(res[0], Exception):
+                    raise res[0]
+
+                msg_type, payload = res
 
                 if msg_type == MessageType.TRANSFER_COMPLETE:
                     break
@@ -510,9 +561,19 @@ async def receive_file(
                     await state_callback(transfer_info)
                     continue
                 elif msg_type == MessageType.DATA_CHUNK:
-                    decrypted = await asyncio.to_thread(decrypt_chunk, session_key, payload)
+                    try:
+                        # Security limit: Aggressively drop if decryption hangs or fails
+                        decrypted = await asyncio.wait_for(
+                            asyncio.to_thread(decrypt_chunk, session_key, payload),
+                            timeout=5.0
+                        )
+                    except Exception as e:
+                        decryption_failures += 1
+                        if decryption_failures >= 3:
+                            raise RuntimeError("Multiple decryption failures. Potential malformed chunk DoS attack.") from e
+                        continue
+
                     await asyncio.to_thread(f.write, decrypted)
-                    await asyncio.to_thread(f.flush)
 
                     transfer_info.transferred_bytes += len(decrypted)
                     tracker.record(len(decrypted))

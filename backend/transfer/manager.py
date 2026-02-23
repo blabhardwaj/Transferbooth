@@ -23,6 +23,7 @@ from transfer.models import (
     TransferState,
 )
 from transfer.service import receive_file, send_file
+from transfer.history import TransferHistoryDB
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class TransferManager:
         self._device_name = ""
         self._identity_service = identity_service
         self._trust_store = trust_store
+        self._history_db = TransferHistoryDB()
 
     @property
     def save_dir(self) -> str:
@@ -102,8 +104,12 @@ class TransferManager:
         logger.info("Transfer manager stopped")
 
     def get_transfers(self) -> list[TransferInfo]:
-        """Return all transfers."""
+        """Return all active transfers."""
         return list(self._transfers.values())
+
+    def get_history(self, limit: int = 50) -> list[dict]:
+        """Return global transfer history."""
+        return self._history_db.get_history(limit)
 
     async def queue_send(
         self, peer_ip: str, peer_port: int, peer_device_id: str,
@@ -244,6 +250,16 @@ class TransferManager:
         async with self._lock:
             self._transfers[info.transfer_id] = info
         await self._emit("transfer_state", info.model_dump())
+
+        # Persist to local database
+        self._history_db.add_transfer(
+            transfer_id=info.transfer_id,
+            file_name=info.file_name,
+            file_size=info.file_size,
+            peer_name=info.peer_device_name,
+            direction=info.direction.value,
+            status=info.state.value,
+        )
 
         # Generate user-facing notifications
         notification = None

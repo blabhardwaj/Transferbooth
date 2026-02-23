@@ -10,6 +10,7 @@ import json
 import logging
 import socket
 import time
+import psutil
 
 from config import (
     APP_ID,
@@ -189,26 +190,38 @@ class DiscoveryService:
                 data = json.dumps(beacon.model_dump()).encode("utf-8")
 
                 if self._transport:
-                    # Collect broadcast addresses
-                    bcast_ips = ["<broadcast>", "255.255.255.255", "127.255.255.255"]
+                    # Collect broadcast addresses robustly using psutil
+                    bcast_ips = set(["255.255.255.255"])
+                    
                     try:
-                        host_name = socket.gethostname()
-                        _, _, ips = socket.gethostbyname_ex(host_name)
-                        for ip in ips:
-                            if not ip.startswith("127."):
-                                # Simple heuristic for /24 subnets
-                                parts = ip.split(".")
-                                if len(parts) == 4:
-                                    parts[3] = "255"
-                                    bcast_ips.append(".".join(parts))
+                        interfaces = psutil.net_if_addrs()
+                        stats = psutil.net_if_stats()
+                        
+                        # Security Denylist of virtual and VPN interfaces
+                        denylist = ["tailscale", "wg", "docker", "veth", "utun", "vmnet", "vboxnet", "loopback", "lo"]
+                        
+                        for iface_name, addrs in interfaces.items():
+                            lower_name = iface_name.lower()
+                            if any(d in lower_name for d in denylist):
+                                continue
+                                
+                            iface_stats = stats.get(iface_name)
+                            if not iface_stats or not iface_stats.isup:
+                                continue
+                                
+                            for addr in addrs:
+                                if addr.family == socket.AF_INET and addr.broadcast:
+                                    if not addr.address.startswith("127."):
+                                        bcast_ips.add(addr.broadcast)
+                                        
                     except Exception as e:
-                        logger.debug(f"Error resolving local IPs: {e}")
+                        logger.debug(f"Error resolving broadcast IPs via psutil: {e}")
 
                     # Send to all gathered addresses
-                    for bcast_ip in set(bcast_ips):
+                    for bcast_ip in bcast_ips:
                         try:
                             self._transport.sendto(data, (bcast_ip, DISCOVERY_PORT))
-                        except Exception as inner_e:
+                        except Exception:
                             # Some interfaces might not support broadcast, ignore
                             pass
 

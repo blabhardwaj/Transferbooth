@@ -42,9 +42,16 @@ class TransferRequestBody(BaseModel):
 
 @router.get("/transfers")
 async def list_transfers():
-    """Return all transfers (active + completed)."""
+    """Return all active transfers."""
     transfers = _transfer_manager.get_transfers()
     return {"transfers": [t.model_dump() for t in transfers]}
+
+
+@router.get("/history")
+async def get_history(limit: int = 50):
+    """Return global transfer history."""
+    history = _transfer_manager.get_history(limit)
+    return {"history": history}
 
 
 

@@ -13,6 +13,7 @@ import {
     Zap,
     Clock,
     HardDrive,
+    CheckCircle,
 } from 'lucide-react';
 import type { TransferInfo } from '../types';
 
@@ -69,7 +70,7 @@ export default function TransferCard({
 
     return (
         <motion.div
-            className="transfer-card"
+            className={`transfer-card ${transfer.state === 'transferring' ? 'is-transferring' : ''}`}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
@@ -163,9 +164,11 @@ export default function TransferCard({
                     {showProgress && (
                         <div className="progress-container">
                             <div className="progress-bar">
-                                <div
+                                <motion.div
                                     className="progress-fill"
-                                    style={{ width: `${Math.min(transfer.progress_percent, 100)}%` }}
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${Math.min(transfer.progress_percent, 100)}%` }}
+                                    transition={{ type: "spring", stiffness: 100, damping: 20, mass: 1 }}
                                 />
                             </div>
                             <div className="progress-label">
@@ -193,6 +196,20 @@ export default function TransferCard({
                                 <span>{formatSize(transfer.transferred_bytes)}</span>
                             </div>
                         </div>
+                    )}
+
+                    {/* Success State */}
+                    {transfer.state === 'completed' && (
+                        <motion.div
+                            className="transfer-success"
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', color: 'var(--success)' }}
+                        >
+                            <CheckCircle size={16} />
+                            <span style={{ fontSize: '13px', fontWeight: 500 }}>Transfer Complete</span>
+                        </motion.div>
                     )}
                 </>
             )}
